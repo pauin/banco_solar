@@ -1,4 +1,3 @@
-//const { ClientRequest } = require('http');
 const {Pool} = require ('pg')
 
 const pool = new Pool({
@@ -64,6 +63,10 @@ async function eliminar(id){
     const client = await pool.connect()
     try{
         await client.query({
+            text:`delete from transferencias where id=$1 returning*`,
+            values:[id]
+        })
+        await client.query({
             text:`delete from usuarios where id=$1 returning*`,
             values:[id]
         })
@@ -75,6 +78,7 @@ async function eliminar(id){
     }
     client.release()
 }
+
 //----------------------------------------------------------transferencia---------------------------
 async function transferir(nombre_emisor, nombre_receptor, monto){
     const client= await pool.connect()
@@ -103,14 +107,14 @@ async function transferir(nombre_emisor, nombre_receptor, monto){
             const id_receptor= resp.rows[0].id
             const mas= resp.rows[0].balance
             const saldo_receptor= parseInt(mas) + parseInt(monto)
-                await client.query({
-                    text:'update usuarios set balance=$2 where id=$1',
-                    values:[id_receptor, saldo_receptor]
-                })
-                await client.query({
-                    text: `insert into transferencias (emisor, receptor, monto) values ($1, $2, $3)`,
-                    values:[emisor.id, receptor.id, monto]
-                })
+            await client.query({
+                text:'update usuarios set balance=$2 where id=$1',
+                values:[id_receptor, saldo_receptor]
+            })
+            await client.query({
+                text: `insert into transferencias (emisor, receptor, monto) values ($1, $2, $3)`,
+                values:[emisor.id, receptor.id, monto]
+            })
         }else{
             console.log("ingrese datos validos")
         }
@@ -119,7 +123,6 @@ async function transferir(nombre_emisor, nombre_receptor, monto){
     }
     client.release()
 }
-
 
 async function tablatransferencia(){
     const client = await pool.connect()
